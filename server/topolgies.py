@@ -13,8 +13,6 @@ class TopologyGenerator(Topo):
             hosts.append(self.addHost(host))
 
         s1 = self.addSwitch( 's1' )
-        server_HTTP = self.addHost('server_HTTP')
-        server_TCP_UDP = self.addHost('server_TCP_UDP ')
 
         for host in hosts: 
             # wifi delay , bandwidth, loss 
@@ -30,46 +28,53 @@ class TopologyGenerator(Topo):
 class GenerateTraffic():
     def __init__():
         self.processes = []
-    def generateTraffic(nodes):
+        self.http_server_IP = 0
+        self.tcp_udp_server_IP = 0
+    def serverSetup(nodes):
         for node in nodes:
             if "HTTP" in node:
-                startHTTP(node)
-                
+                self.http_server_IP = node.IP()
+                startHTTP(node) 
             if "TCP" in node:
-                startTCP_UDP(node)
+                self.tcp_udp_server_IP = node.IP()
+                startIperf(node)
+            if "UDP" in node:
+                self.tcp_udp_server_IP = node.IP()
+                startIperf(node,udp=True)
 
+    def generateTraffic(nodes):
+        for node in nodes:
             if "phone" in node or "wifi":
-                generateWIFITraffic(node)
+                generateHTTPTraffic(node)
             elif "IOT" in node:
-                generateIOTTraffic()
+                generateHTTPTraffic(nodes , is_IOT = True)
 
-        pass
-
-    def startHTTP(host, port=8000):
+    # Start HTTP server
+    def startHTTP(host: list , port=8000: int) --> Popen:
         return host.popen(["python3", "-m", "http.server", str(port)],
                         stdout=None, stderr=None)
 
-    def start_iperf_server(host, udp=False, port=5001):
+    # Start TCP/UDP server
+    def startIperf(host, udp=False, port=5001):
         args = ["iperf", "-s", "-p", str(port)]
         if udp: args.insert(2, "-u")
         return host.popen(args)
 
-    def generateWIFITraffic(node):
-        cmd = f"while true; do curl -s http://{server_ip}:{port} >/dev/null; sleep {period}; done"
-        return client.popen(["bash", "-lc", cmd])
-
-        # curlling a server HTTP request traffic and TCP / UDP traffic 
-        # Add delay and jitter 
-        pass
-    def generateIOTTraffic():
-        # perodic small bursts 
-        pass
+    def generateHTTPTraffic(node: Host , is_IOT=False: boolean) -> Popen:
+        port = 8000
+        # period in seconds 
+        if(is_IOT):
+            period = 60
+        else:
+            period = 1 
+        cmd = f"while true; do curl -s http://{self.http_server_IP}:{port} >/dev/null; sleep {period}; done"
+        return node.popen(["bash", "-lc", cmd])
 def runMinimalTopo():
     "Bootstrap a Mininet network using the Minimal Topology"
 
     # Create an instance of our topology
 
-    test1 = ['phone1' ,'phone2', 'wiredPC' ,'wifiLaptop' ]
+    test1 = ['phone1' , 'phone2', 'wiredPC' ,'wifiLaptop' ,'serverHTTP' ,'serverTCP' ,'serverUDP' ]
     topo = TopologyGenerator(host_names=test1)
 
     # Create a network based on the topology using OVS and controlled by
@@ -82,8 +87,9 @@ def runMinimalTopo():
 
     # Actually start the network
     net.start()
+    hosts  = net.hosts 
 
-    print(net.keys())
+    print(hosts[2].IP())
     # Drop the user in to a CLI so user can run commands.
 
     # After the user exits the CLI, shutdown the network.
