@@ -26,41 +26,42 @@ class TopologyGenerator(Topo):
                 self.addLink(host, s1, bw=100, delay= 1 )
 
 class GenerateTraffic():
-    def __init__():
+    def __init__(self):
         self.processes = []
         self.http_server_IP = 0
         self.tcp_udp_server_IP = 0
-    def serverSetup(nodes):
+    def serverSetup(self ,nodes):
         for node in nodes:
-            if "HTTP" in node:
-                self.http_server_IP = node.IP()
-                startHTTP(node) 
-            if "TCP" in node:
-                self.tcp_udp_server_IP = node.IP()
-                startIperf(node)
-            if "UDP" in node:
-                self.tcp_udp_server_IP = node.IP()
-                startIperf(node,udp=True)
+            if "HTTP" in node.name:
 
-    def generateTraffic(nodes):
+                self.http_server_IP = node.IP()
+                self.startHTTP(node) 
+            if "TCP" in node.name:
+                self.tcp_udp_server_IP = node.IP()
+                self.startIperf(node)
+            if "UDP" in node.name:
+                self.tcp_udp_server_IP = node.IP()
+                self.startIperf(node,udp=True)
+
+    def generateTraffic(self, nodes):
         for node in nodes:
-            if "phone" in node or "wifi":
-                generateHTTPTraffic(node)
-            elif "IOT" in node:
-                generateHTTPTraffic(nodes , is_IOT = True)
+            if "phone" in node.name or "wifi":
+                self.generateHTTPTraffic(node)
+            elif "IOT" in node.name:
+                self.generateHTTPTraffic(nodes , is_IOT = True)
 
     # Start HTTP server
-    def startHTTP(host: list , port=8000: int) --> Popen:
+    def startHTTP(self,host: list , port=8000 ) :
         return host.popen(["python3", "-m", "http.server", str(port)],
                         stdout=None, stderr=None)
 
     # Start TCP/UDP server
-    def startIperf(host, udp=False, port=5001):
+    def startIperf(self,host, udp=False, port=5001):
         args = ["iperf", "-s", "-p", str(port)]
         if udp: args.insert(2, "-u")
         return host.popen(args)
 
-    def generateHTTPTraffic(node: Host , is_IOT=False: boolean) -> Popen:
+    def generateHTTPTraffic(self,node, is_IOT=False ) :
         port = 8000
         # period in seconds 
         if(is_IOT):
@@ -76,6 +77,7 @@ def runMinimalTopo():
 
     test1 = ['phone1' , 'phone2', 'wiredPC' ,'wifiLaptop' ,'serverHTTP' ,'serverTCP' ,'serverUDP' ]
     topo = TopologyGenerator(host_names=test1)
+    generation = GenerateTraffic() 
 
     # Create a network based on the topology using OVS and controlled by
     # a remote controller.
@@ -89,8 +91,11 @@ def runMinimalTopo():
     net.start()
     hosts  = net.hosts 
 
-    print(hosts[2].IP())
+    generation.serverSetup(hosts)
+    generation.generateTraffic(hosts)
+
     # Drop the user in to a CLI so user can run commands.
+    CLI(net)
 
     # After the user exits the CLI, shutdown the network.
     net.stop()
