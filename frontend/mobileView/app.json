@@ -1,0 +1,11 @@
+{
+  "name": "mobileView",
+  "displayName": "mobileView",
+  "extra": {
+    "eas": {
+      "projectId": "b929d487-e7d0-49da-8ba1-844357732045"
+    }
+  },
+  "owner": "ruebens-organization",
+  "slug": "network-monitoring-application"
+}

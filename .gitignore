@@ -1,0 +1,5 @@
+device_mapping.json
+
+__pycache__/
+
+.env
